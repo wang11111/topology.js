@@ -2822,6 +2822,9 @@ export class Canvas {
   }
 
   initLineRect(pen: Pen) {
+    if (!pen) {
+      return;
+    }
     if (!pen.calculative.worldAnchors?.length) {
       this._del([pen]);
       return;
