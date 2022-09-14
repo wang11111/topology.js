@@ -5204,7 +5204,7 @@ export class Canvas {
     this.externalElements.appendChild(this.inputParent);
     this.inputParent.onmousedown = this.stopPropagation;
     this.inputDiv.onmousedown = this.stopPropagation;
-    this.inputDiv.contentEditable = 'true';
+    this.inputDiv.contentEditable = 'false';
     this.inputRight.onmousedown = this.stopPropagation;
     this.dropdown.onmousedown = this.stopPropagation;
     this.inputRight.style.transform = 'rotate(135deg)';
