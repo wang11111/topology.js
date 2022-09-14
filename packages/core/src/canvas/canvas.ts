@@ -2658,6 +2658,7 @@ export class Canvas {
       this.doEditAction(action, true);
       step--;
     }
+    this.activeHistory();
   }
 
   redo() {
@@ -2676,6 +2677,17 @@ export class Canvas {
       const action = this.store.histories[++this.store.historyIndex];
       this.doEditAction(action, false);
       step--;
+    }
+    this.activeHistory();
+  }
+
+  activeHistory() {
+    let before = this.store.histories[this.store.historyIndex];
+    if (before) {
+      before.pens.forEach((pen) => {
+        pen.calculative.canvas = this;
+      });
+      this.active(before.pens);
     }
   }
 
