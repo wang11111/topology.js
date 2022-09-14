@@ -1927,7 +1927,6 @@ export class Canvas {
         this.store.pens[pen.id] = undefined;
       });
       this.movingPens = undefined;
-      this.translatePens(this.movingPens, 0, 0);
     }
 
     this.mouseDown = undefined;
@@ -2634,6 +2633,23 @@ export class Canvas {
         this.store.histories.length - this.store.historyIndex - 1
       );
     }
+    action.pens?.forEach((pen) => {
+      let found: any;
+      if (action.initPens) {
+        for (const p of action.initPens) {
+          if (p.id === pen.id) {
+            found = p;
+          }
+        }
+      }
+      if (found) {
+        for (const k in pen) {
+          if (found[k] == undefined) {
+            found[k] = undefined;
+          }
+        }
+      }
+    });
     this.store.histories.push(action);
     this.store.historyIndex = this.store.histories.length - 1;
     this.store.emitter.emit('update', {
@@ -2716,8 +2732,8 @@ export class Canvas {
         break;
       case EditType.Update:
         const pens = undo ? action.initPens : action.pens;
-        pens.forEach((aPen) => {
-          const pen: Pen = deepClone(aPen, true);
+        pens.forEach((p) => {
+          const pen: Pen = deepClone(p, true);
           const i = this.store.data.pens.findIndex(
             (item) => item.id === pen.id
           );
