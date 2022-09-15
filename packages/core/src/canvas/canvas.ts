@@ -4618,6 +4618,8 @@ export class Canvas {
       if (!clipboard || !clipboard.topology) {
         return;
       }
+    } else {
+      return;
     }
 
     if (
