@@ -1,6 +1,6 @@
-import { IValue, LineAnimateType, LockState, Pen } from './model';
+import { LineAnimateType, LockState, Pen } from './model';
 import { getLineRect, getSplitAnchor, line } from '../diagrams';
-import { Direction, inheritanceProps } from '../data';
+import { Direction } from '../data';
 import {
   calcRotate,
   distance,
@@ -528,17 +528,30 @@ export function ctxRotate(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   pen: Pen
 ) {
-  const { x, y } = pen.calculative.worldRect.center;
-  ctx.translate(x, y);
-  let rotate = (pen.calculative.rotate * Math.PI) / 180;
-  // 目前只有水平和垂直翻转，都需要 * -1
-  if (pen.calculative.flipX) {
-    rotate *= -1;
-  } else if (pen.calculative.flipY) {
-    rotate *= -1;
-  }
-  ctx.rotate(rotate);
-  ctx.translate(-x, -y);
+  // const { x, y } = pen.calculative.worldRect.center;
+  // ctx.translate(x, y);
+  // let rotate = (pen.calculative.rotate * Math.PI) / 180;
+  // // 目前只有水平和垂直翻转，都需要 * -1
+  // if (pen.calculative.flipX) {
+  //   rotate *= -1;
+  // } else if (pen.calculative.flipY) {
+  //   rotate *= -1;
+  // }
+  // ctx.rotate(rotate);
+  // ctx.translate(-x, -y);
+  //ctx.save();
+  var matrix = pen.calculative.matrixObj.toMatrix();
+      ctx.setTransform(
+        matrix[0],
+        matrix[1],
+        matrix[2],
+        matrix[3],
+        matrix[4],
+        matrix[5]
+      );
+  ctx.save();
+
+  //ctx.restore();
 }
 
 export function renderPen(ctx: CanvasRenderingContext2D, pen: Pen) {
@@ -1718,9 +1731,6 @@ export function setNodeAnimateProcess(pen: Pen, process: number) {
       pen.calculative[k] = Math.round(current * 100) / 100;
     } else {
       pen.calculative[k] = frame[k];
-      const v: any = {};
-      v[k] = frame[k];
-      setChildValue(pen, v);
     }
 
     if (k === 'text') {
@@ -2071,22 +2081,5 @@ function ctxDrawCanvas(ctx: CanvasRenderingContext2D, pen: Pen) {
     // TODO: 原有 return 终止后续操作，必要性不大
     canvasDraw(ctx, pen);
     ctx.restore();
-  }
-}
-
-export function setChildValue(pen: Pen, data: IValue) {
-  for (const k in data) {
-    if (inheritanceProps.includes(k)) {
-      pen[k] = data[k];
-      pen.calculative[k] = data[k];
-    }
-
-    if (pen.name === 'combine' && pen.showChild === undefined) {
-      const children = pen.children;
-      children?.forEach((childId) => {
-        const child = pen.calculative.canvas.store.pens[childId];
-        setChildValue(child, data);
-      });
-    }
   }
 }

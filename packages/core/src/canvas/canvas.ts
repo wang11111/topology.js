@@ -94,7 +94,7 @@ import {
   s8,
 } from '../utils';
 import {
-  inheritanceProps,
+  canChangeTogether,
   defaultCursors,
   defaultDrawLineFns,
   HotkeyType,
@@ -122,7 +122,7 @@ import { CanvasImage } from './canvasImage';
 import { MagnifierCanvas } from './magnifierCanvas';
 import { lockedError } from '../utils/error';
 import { Topology } from '../core';
-
+import {utils ,StandardOperation} from './state'
 export const movingSuffix = '-moving' as const;
 export class Canvas {
   canvas = document.createElement('canvas');
@@ -201,13 +201,13 @@ export class Canvas {
   beforeRemovePens: (pens: Pen[]) => Promise<boolean>;
   beforeRemoveAnchor: (pen: Pen, anchor: Point) => Promise<boolean>;
 
-  customResizeDock: (
+  customeResizeDock: (
     store: TopologyStore,
     rect: Rect,
     pens: Pen[],
     resizeIndex: number
   ) => { xDock: Point; yDock: Point };
-  customMoveDock: (
+  customeMoveDock: (
     store: TopologyStore,
     rect: Rect,
     pens: Pen[],
@@ -261,14 +261,6 @@ export class Canvas {
     this.createInput();
 
     this.tooltip = new Tooltip(parentElement, store);
-    this.tooltip.box.onmouseleave = (e) => {
-      this.patchFlags = true;
-      this.store.lastHover && (this.store.lastHover.calculative.hover = false);
-      let hover = this.store.data.pens.find(
-        (item) => item.calculative.hover === true
-      );
-      setHover(hover, false);
-    };
     if (this.store.options.scroll) {
       this.scroll = new Scroll(this);
     }
@@ -2776,7 +2768,7 @@ export class Canvas {
             this.updateLines(pen, true);
             if (pen.name === 'combine') {
               let unPen: Pen = unPens.find((item) => item.id === pen.id);
-              inheritanceProps.forEach((key) => {
+              canChangeTogether.forEach((key) => {
                 if (pen[key] !== unPen[key]) {
                   this.parent.setValue(
                     { id: pen.id, [key]: pen[key] },
@@ -2845,6 +2837,7 @@ export class Canvas {
       pen.lineHeight = lineHeight;
     }
     pen.calculative = { canvas: this };
+    pen.calculative.matrixObj = new StandardOperation();
     if (pen.video || pen.audio) {
       pen.calculative.onended = (pen: Pen) => {
         this.nextAnimate(pen);
@@ -3201,18 +3194,12 @@ export class Canvas {
     pen.calculative.iconSize = pen.iconSize * scale;
     pen.calculative.iconWidth = pen.iconWidth * scale;
     pen.calculative.iconHeight = pen.iconHeight * scale;
-    pen.calculative.iconLeft =
-      pen.iconLeft < 1 ? pen.iconLeft : pen.iconLeft * scale;
-    pen.calculative.iconTop =
-      pen.iconTop < 1 ? pen.iconTop : pen.iconTop * scale;
-    pen.calculative.textWidth =
-      pen.textWidth < 1 ? pen.textWidth : pen.textWidth * scale;
-    pen.calculative.textHeight =
-      pen.textHeight < 1 ? pen.textHeight : pen.textHeight * scale;
-    pen.calculative.textLeft =
-      pen.textLeft < 1 ? pen.textLeft : pen.textLeft * scale;
-    pen.calculative.textTop =
-      pen.textTop < 1 ? pen.textTop : pen.textTop * scale;
+    pen.calculative.iconLeft = pen.iconLeft * scale;
+    pen.calculative.iconTop = pen.iconTop * scale;
+    pen.calculative.textWidth = pen.textWidth * scale;
+    pen.calculative.textHeight = pen.textHeight * scale;
+    pen.calculative.textLeft = pen.textLeft * scale;
+    pen.calculative.textTop = pen.textTop * scale;
 
     if (pen.type === PenType.Line && pen.borderWidth) {
       pen.calculative.borderWidth = pen.borderWidth * scale;
@@ -3707,7 +3694,7 @@ export class Canvas {
     calcCenter(rect);
     if (!this.store.options.disableDockLine) {
       this.clearDock();
-      const resizeDock = this.customResizeDock || calcResizeDock;
+      const resizeDock = this.customeResizeDock || calcResizeDock;
       this.dock = resizeDock(
         this.store,
         rect,
@@ -3813,7 +3800,7 @@ export class Canvas {
     };
     if (!this.store.options.disableDockLine) {
       this.clearDock();
-      const moveDock = this.customMoveDock || calcMoveDock;
+      const moveDock = this.customeMoveDock || calcMoveDock;
       this.dock = moveDock(this.store, rect, this.movingPens, offset);
       const { xDock, yDock } = this.dock;
       if (xDock) {
@@ -4444,6 +4431,9 @@ export class Canvas {
         pen.x = (pen.calculative.worldRect.x - rect.x) / rect.width;
         pen.y = (pen.calculative.worldRect.y - rect.y) / rect.height;
       } else {
+        pen.calculative.matrixObj.addTranslate(pen.calculative.worldRect.center.x,pen.calculative.worldRect.center.y);
+        pen.calculative.matrixObj.addRotate(angle);
+        pen.calculative.matrixObj.addTranslate(-pen.calculative.worldRect.center.x,-pen.calculative.worldRect.center.y);
         pen.x = pen.calculative.worldRect.center.x - pen.width / 2;
         pen.y = pen.calculative.worldRect.center.y - pen.height / 2;
       }
@@ -5006,7 +4996,7 @@ export class Canvas {
 
     //value和innerText问题
     const preInputText = pen.calculative.tempText || pen.text + '' || '';
-    const textArr = preInputText.replace(/\x20/g, '&nbsp;').split(/[\s\n]/);
+    const textArr = preInputText.split(/[\s\n]/);
     const finalText = `${textArr.join('</div><div>')}</div>`
       .replace('</div>', '')
       .replace(/\<div\>\<\/div\>/g, '<div><br></div>');
@@ -5222,8 +5212,7 @@ export class Canvas {
       this.inputDiv.dataset.value = this.inputDiv.innerHTML
         .replace(/\<div\>/g, '\n')
         .replace(/\<\/div\>/g, '')
-        .replace(/\<br\>/g, '')
-        .replace(/&nbsp;/g, ' ');
+        .replace(/\<br\>/g, '');
       if (pen.onInput) {
         pen.onInput(pen, this.inputDiv.dataset.value);
       } else if (pen.text !== this.inputDiv.dataset.value) {
