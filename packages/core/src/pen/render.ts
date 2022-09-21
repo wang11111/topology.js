@@ -2074,9 +2074,9 @@ function ctxDrawCanvas(ctx: CanvasRenderingContext2D, pen: Pen) {
   }
 }
 
-export function setChildValue(pen: Pen, data: IValue, inheritance = true) {
+export function setChildValue(pen: Pen, data: IValue) {
   for (const k in data) {
-    if (!inheritance || inheritanceProps.includes(k)) {
+    if (inheritanceProps.includes(k)) {
       pen[k] = data[k];
       pen.calculative[k] = data[k];
     }
@@ -2085,7 +2085,7 @@ export function setChildValue(pen: Pen, data: IValue, inheritance = true) {
       const children = pen.children;
       children?.forEach((childId) => {
         const child = pen.calculative.canvas.store.pens[childId];
-        setChildValue(child, data, false);
+        setChildValue(child, data);
       });
     }
   }
