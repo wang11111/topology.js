@@ -36,12 +36,13 @@ export interface TopologyData {
   fromArrow?: string;
   toArrow?: string;
   lineWidth?: number;
-  color?: string;   // 画笔默认 color 优先级高于 options.color
-  penBackground?: string;   // 画笔默认背景色
-  paths?: { [key: string]: string };  // paths 该图纸使用到的 svgPath ，打开后需要保存到 globalStore.paths
+  color?: string; // 画笔默认 color 优先级高于 options.color
+  penBackground?: string; // 画笔默认背景色
+  paths?: { [key: string]: string }; // paths 该图纸使用到的 svgPath ，打开后需要保存到 globalStore.paths
   bkImage?: string; // 背景图片
   http?: string; // http 请求 Url
   httpTimeInterval?: number; // http 请求间隔
+  version?: string; // 版本号
 }
 
 export enum EditType {
@@ -54,7 +55,7 @@ export interface EditAction {
   type?: EditType;
   initPens?: Pen[];
   pens?: Pen[];
-  step?: number;   // 多次历史记录记为一次， step >= 2
+  step?: number; // 多次历史记录记为一次， step >= 2
   origin?: Point;
   scale?: number;
 }
@@ -79,17 +80,22 @@ export interface TopologyStore {
   emitter: Emitter;
   dpiRatio?: number;
   clipboard?: TopologyClipboard;
-  dirtyBackground?: boolean; // 是否需要重绘背景，包含网格
-  dirtyTop?: boolean;   // 是否需要重绘标尺
+  patchFlagsBackground?: boolean; // 是否需要重绘背景，包含网格
+  patchFlagsTop?: boolean; // 是否需要重绘标尺
   bkImg: HTMLImageElement;
   // 测试使用
-  fillWorldTextRect?: boolean;  // 填充文本区域
+  fillWorldTextRect?: boolean; // 填充文本区域
 }
 
 export interface TopologyClipboard {
+  topology?: boolean;
   pens: Pen[];
   origin: Point;
   scale: number;
+  offset?: number;
+  page: string;
+  initRect?: Point;
+  pos?: Point;
 }
 
 export const createStore = () => {
@@ -101,7 +107,7 @@ export const createStore = () => {
       pens: [],
       origin: { x: 0, y: 0 },
       center: { x: 0, y: 0 },
-      paths: {}
+      paths: {},
     },
     histories: [],
     pens: {},
@@ -131,7 +137,7 @@ export const clearStore = (store: TopologyStore) => {
     pens: [],
     origin: { x: 0, y: 0 },
     center: { x: 0, y: 0 },
-    paths: {}
+    paths: {},
   };
   store.pens = {};
   store.histories = [];

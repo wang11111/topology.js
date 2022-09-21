@@ -1,15 +1,20 @@
-export function le5leSwitch(ctx: CanvasRenderingContext2D, pen: any) {
-  if (!pen.onDestroy) {
+import { formPen } from './common';
+
+export function le5leSwitch(ctx: CanvasRenderingContext2D, pen: formPen) {
+  if (!pen.onClick) {
     pen.onClick = click;
   }
   let x = pen.calculative.worldRect.x;
   let y = pen.calculative.worldRect.y;
   let w = pen.calculative.worldRect.width;
   let h = pen.calculative.worldRect.height;
+  if (w < h * 1.5) {
+    w = 1.5 * h;
+  }
   ctx.beginPath();
   ctx.arc(x + h / 2, y + h / 2, h / 2, Math.PI / 2, (Math.PI * 3) / 2);
-  ctx.lineTo(x + (h * 3) / 2, y);
-  ctx.arc(x + (h * 3) / 2, y + h / 2, h / 2, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(x + w - h / 2, y);
+  ctx.arc(x + w - h / 2, y + h / 2, h / 2, -Math.PI / 2, Math.PI / 2);
   ctx.lineTo(x + h / 2, y + h);
   if (pen.checked) {
     ctx.fillStyle = pen.onColor;
@@ -22,7 +27,7 @@ export function le5leSwitch(ctx: CanvasRenderingContext2D, pen: any) {
     ctx.fillStyle = '#ffffff';
     ctx.moveTo(x + h * 2, y + h / 2);
     ctx.arc(
-      x + (h * 3) / 2,
+      x + w - h / 2,
       y + h / 2,
       h / 2 > 2 ? h / 2 - 2 : 1,
       0,
@@ -44,14 +49,13 @@ export function le5leSwitch(ctx: CanvasRenderingContext2D, pen: any) {
     ctx.fill();
   }
   ctx.closePath();
-  return false;
 }
 
-function click(pen: any) {
+function click(pen: formPen) {
   if (pen.disable) {
     return;
   }
   pen.checked = !pen.checked;
   pen.calculative.canvas.store.emitter.emit('valueUpdate', pen);
-  pen.calculative.canvas.render(Infinity);
+  pen.calculative.canvas.render();
 }

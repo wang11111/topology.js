@@ -56,17 +56,42 @@ export const needCalcTextRectProps = [
 
 export const needSetPenProps = ['x', 'y', 'width', 'height'];
 
-export const needDirtyPenRectProps = ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'flipX', 'flipY', 'visible', 'showChild'];
+export const needPatchFlagsPenRectProps = [
+  'paddingTop',
+  'paddingRight',
+  'paddingBottom',
+  'paddingLeft',
+  'flipX',
+  'flipY',
+  'visible',
+  'showChild',
+];
 
 export const needCalcIconRectProps = ['iconLeft', 'iconTop', 'iconRotate'];
 
-export interface ConnectLine { lineId: string; lineAnchor: string; anchor: string }
+export interface ConnectLine {
+  lineId: string;
+  lineAnchor: string;
+  anchor: string;
+}
 
 export type TextAlign = 'left' | 'center' | 'right';
 export type TextBaseline = 'top' | 'middle' | 'bottom';
 export type WhiteSpace = 'nowrap' | 'pre-line' | 'break-all' | '';
 // SetValue 方法参数类型
-export type SetValue = Pen & Partial<Record<'tag' | 'newId', string>> & {[key: string]: any};
+export type IValue = Pen &
+  Partial<ChartData> &
+  Partial<Record<'tag' | 'newId', string>> & { [key: string]: any };
+
+// obj 类型数组 text 字段显示文字，其它属性选中后合并到画笔上
+// string 类型，只展示文字
+export type Dropdown = string | IValue;
+
+export enum LineAnimateType {
+  Normal, // 水流
+  Beads, // 水珠流动
+  Dot, // 圆点
+}
 export interface Pen extends Rect {
   id?: string;
   tags?: string[];
@@ -85,6 +110,9 @@ export interface Pen extends Rect {
   length?: number;
 
   title?: string;
+  // 优先级高于 title
+  titleFnJs?: string;
+  titleFn?: (pen: Pen) => string;
 
   lineWidth?: number;
   borderWidth?: number;
@@ -112,8 +140,8 @@ export interface Pen extends Rect {
   lineGradientToColor?: string;
   lineGradientAngle?: number;
 
-  lineCap?: string;
-  lineJoin?: string;
+  lineCap?: CanvasLineCap;
+  lineJoin?: CanvasLineJoin;
   shadowColor?: string;
   shadowBlur?: number;
   shadowOffsetX?: number;
@@ -218,15 +246,14 @@ export interface Pen extends Rect {
   // 结束动画后，是否保持动画状态
   keepAnimateState?: boolean;
 
-  lineAnimateType?: number;
+  lineAnimateType?: LineAnimateType;
 
   frames?: Pen[];
   // 提前预置的不同效果的动画组
   animateList?: Pen[][];
 
   input?: boolean;
-  dropdownList?: any[]; // obj 类型数组 text 字段显示文字，其它属性选中后合并到画笔上
-  // string 类型数组，只展示文字
+  dropdownList?: Dropdown[];
 
   events?: Event[];
 
@@ -245,12 +272,16 @@ export interface Pen extends Rect {
   flipX?: boolean;
   flipY?: boolean;
 
+  fillTexts?: string[];
+
   hiddenText?: boolean; // 隐藏 text
   keepDecimal?: number; // undefined 显示原内容；0 显示整数
   showChild?: number; // 第几个子元素展示 undefined 即展示全部
   animateDotSize?: number; // 线条原点动画，原点大小
   isRuleLine?: boolean; // 是否是规则线，规则线不受缩放，平移影响
   isBottom?: boolean; // 是否是底部图片
+  form?: FormItem[]; // 业务表单
+  lockedOnCombine?: LockState; // 组合成 combine ，该节点的 locked 值
   // calculative 对象中的值是为了动画存在，表明了渐变过程中，画布上绘制的当前值
   calculative?: {
     x?: number;
@@ -293,8 +324,6 @@ export interface Pen extends Rect {
     lineGradientFromColor?: string;
     lineGradientToColor?: string;
     lineGradientAngle?: number;
-    lineCap?: string;
-    lineJoin?: string;
     shadowColor?: string;
     shadowBlur?: number;
     shadowOffsetX?: number;
@@ -346,8 +375,8 @@ export interface Pen extends Rect {
     isDock?: boolean; // 是否是对齐参考画笔
     pencil?: boolean;
     activeAnchor?: Point;
-    dirty?: boolean;
-    visible?: boolean;   // TODO: visible 是否参与动画呢？
+    patchFlags?: boolean;
+    visible?: boolean; // TODO: visible 是否参与动画呢？
     // 仅仅内部专用
     inView?: boolean;
     // 辅助变量，画线时，动态计算锚点是否时水平方向
@@ -381,7 +410,6 @@ export interface Pen extends Rect {
     pause?: number;
 
     layer?: number;
-    dropdownList?: any[];
 
     canvas?: Canvas;
 
@@ -398,12 +426,13 @@ export interface Pen extends Rect {
     keepDecimal?: number; // undefined 显示原内容；0 显示整数；保留几位小数
     showChild?: number; // 第几个子元素展示 undefined 即展示全部
     animateDotSize?: number; // 线条原点动画，原点大小
+    zIndex?: number; //dom节点 z-index;
     // media element
     onended?: (pen: Pen) => void;
   };
 
-  // 最后一个动画帧状态数据
-  lastFrame?: Pen;
+  // 前一个动画帧状态数据
+  prevFrame?: Pen;
 
   onAdd?: (pen: Pen) => void;
   onValue?: (pen: Pen) => void;
@@ -421,21 +450,50 @@ export interface Pen extends Rect {
   onShowInput?: (pen: Pen, e: Point) => void;
   onInput?: (pen: Pen, text: string) => void;
   onChangeId?: (pen: Pen, oldId: string, newId: string) => void;
+  onBinds?: (pen: Pen, values: IValue[], formItem: FormItem) => IValue[];
+  onStartVideo?: (pen: Pen) => void;
+  onPauseVideo?: (pen: Pen) => void;
+  onStopVideo?: (pen: Pen) => void;
 }
+
+// 属性绑定变量
+export interface FormItem {
+  key: string;
+  /**
+   * 单属性绑定单变量 或 绑定多变量
+   * 为数组时，顺序不重要
+   */
+  dataIds?: BindId | BindId[];
+}
+
+export type BindId = {
+  dataId: string;
+  name: string; // TODO: 用作图表的归类
+};
 
 /**
  * 图表追加或替换数据，只关注数据
  */
 export interface ChartData {
-  dataX: any | any[]; // x 轴数据变化
-  dataY: any | any[]; // y 轴数据变化
+  dataX: any | any[]; // x轴 或 y 轴分类变化
+  dataY: any | any[]; // series 数据变化
+  /**
+   * @deprecated 旧版本，未来移除该属性
+   */
   overwrite?: boolean; // 追加 or 替换 ， false 追加
 }
 
 /**
  * dom 类型的 图形
  */
-export const isDomShapes = ['gif', 'iframe', 'video', 'echarts', 'highcharts', 'lightningCharts'];
+export const isDomShapes = [
+  'gif',
+  'iframe',
+  'video',
+  'echarts',
+  'highcharts',
+  'lightningCharts',
+];
 
 // 格式刷同步的属性
 export const formatAttrs: Set<string> = new Set([
@@ -449,8 +507,8 @@ export const formatAttrs: Set<string> = new Set([
   'progressColor',
   'verticalProgress',
   // 'flip',
-  "flipX",
-  "flipY",
+  'flipX',
+  'flipY',
   'input',
   'lineDash',
   'lineCap',
@@ -498,3 +556,26 @@ export const formatAttrs: Set<string> = new Set([
   'hiddenText',
   'keepDecimal',
 ]);
+
+/**
+ * 清空 pen 的 生命周期
+ */
+export function clearLifeCycle(pen: Pen) {
+  pen.onAdd = undefined;
+  pen.onValue = undefined;
+  pen.onBeforeValue = undefined;
+  pen.onDestroy = undefined;
+  pen.onMove = undefined;
+  pen.onResize = undefined;
+  pen.onRotate = undefined;
+  pen.onClick = undefined;
+  pen.onMouseEnter = undefined;
+  pen.onMouseLeave = undefined;
+  pen.onMouseDown = undefined;
+  pen.onMouseMove = undefined;
+  pen.onMouseUp = undefined;
+  pen.onShowInput = undefined;
+  pen.onInput = undefined;
+  pen.onChangeId = undefined;
+  pen.onBinds = undefined;
+}

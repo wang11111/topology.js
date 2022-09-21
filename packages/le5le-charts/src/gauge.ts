@@ -1,7 +1,8 @@
-import { getValidValue } from './common';
+import { getValidValue, leChartPen } from './common';
+
 //仪表全盘
 let clockInterval: any;
-export function gauge(ctx: CanvasRenderingContext2D, pen: any) {
+export function gauge(ctx: CanvasRenderingContext2D, pen: leChartPen): void {
   if (!pen.onAdd) {
     pen.onAdd = onAdd;
     pen.onDestroy = onDestroy;
@@ -293,22 +294,27 @@ export function gauge(ctx: CanvasRenderingContext2D, pen: any) {
     ctx.fill();
     ctx.closePath();
   }
-  return false;
 }
 
-function onAdd(pen: any) {
+function onAdd(pen: leChartPen) {
   if (pen.isClock) {
     clockInterval = setInterval(() => {
       var date = new Date();
       var second = date.getSeconds();
       var minute = date.getMinutes() + second / 60;
       var hour = (date.getHours() % 12) + minute / 60;
-      pen.calculative.canvas.parent.setValue({
-        id: pen.id,
-        hourvalue: hour,
-        minutevalue: minute,
-        secondvalue: second,
-      });
+      pen.calculative.canvas.parent.setValue(
+        {
+          id: pen.id,
+          hourvalue: hour,
+          minutevalue: minute,
+          secondvalue: second,
+        },
+        {
+          render: true,
+          history: false,
+        }
+      );
     }, 1000);
   } else {
     const tem = pen.value;

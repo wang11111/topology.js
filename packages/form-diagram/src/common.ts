@@ -1,4 +1,96 @@
-import { calcExy } from "@topology/core";
+import { Pen } from '../../core/src/pen';
+import { ChartData } from '../../core/src/pen';
+
+import { calcRightBottom, Rect } from '@topology/core';
+
+export interface Pos {
+  row: number;
+  col: number;
+}
+
+export enum ReplaceMode {
+  Add,
+  Replace,
+  ReplaceAll,
+}
+export interface formPen extends Pen {
+  optionPos?: number[];
+  direction?: string;
+  checkboxWidth?: number;
+  isForbidden?: boolean;
+  options?: {
+    isForbidden: boolean;
+    isChecked: boolean;
+    background: string;
+    text: string;
+  }[];
+  optionHeight?: number;
+  checkboxHeight?: number;
+  calculative?: {
+    barRect: Rect;
+    ballRect: Rect;
+    texts: any[];
+    activeCell: Pos;
+    hoverCell: Pos;
+    inputCell: Pos;
+    isUpdateData: boolean;
+    isHover: boolean;
+    isInput: boolean;
+  } & Pen['calculative'];
+  checked?: boolean | string;
+  onColor?: string;
+  disable?: boolean;
+  disableOnColor?: string;
+  offColor?: string;
+  disableOffColor?: string;
+  _textWidth?: number;
+  _fontSize?: number;
+  unit?: string;
+  sliderWidth?: number;
+  sliderHeight?: number;
+  barHeight?: number;
+  value?: number | string;
+  min?: number;
+  max?: number;
+  table?: {
+    rowHeight: number;
+    colWidth: number;
+    header: {
+      data: any;
+      show: boolean;
+      height: number;
+      fontWeight: number;
+    };
+    data: any[];
+  };
+  colPos: number[];
+  rowPos: number[];
+  tableWidth: number;
+  tableHeight: number;
+  isInit: boolean;
+  rowHeight: number;
+  colWidth: number;
+  styles: {
+    row: number;
+    col: number;
+    color: string;
+    background: string;
+    width: number;
+    height: number;
+    wheres: { comparison: string; key: string; value: string }[];
+    pens: formPen[];
+  }[];
+  data: any;
+  isFirstTime: boolean;
+  replaceMode?: ReplaceMode;
+  timer: NodeJS.Timeout;
+}
+
+export interface cellData extends ChartData {
+  row: number;
+  col: number;
+  value: string;
+}
 
 export function getTextLength(text: string, pen: any) {
   const textScale = (pen.calculative.worldRect.height * 14) / 16;
@@ -29,10 +121,14 @@ export function initOptions(pen: any) {
       y: pen.y,
       height: pen.height,
       width: pen.width,
+      center: {
+        x: pen.x + pen.width / 2,
+        y: pen.y + pen.height / 2,
+      },
     };
-    calcExy(pen.calculative.worldRect);
+    calcRightBottom(pen.calculative.worldRect);
   } else if (pen.direction == 'vertical') {
-    if (!pen.optionInterval) {
+    if (pen.optionInterval == undefined) {
       pen.optionInterval = 20;
     }
     if (!pen.optionHeight) {
@@ -53,8 +149,12 @@ export function initOptions(pen: any) {
         y: pen.y,
         height: pen.height,
         width: pen.width,
+        center: {
+          x: pen.x + pen.width / 2,
+          y: pen.y + pen.height / 2,
+        },
       };
-      calcExy(pen.calculative.worldRect);
+      calcRightBottom(pen.calculative.worldRect);
     }
   }
 }

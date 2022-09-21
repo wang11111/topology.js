@@ -1,36 +1,37 @@
-import { calcExy } from "@topology/core";
+import { formPen, cellData, Pos } from './common';
+import { Point } from '../../core/src/point';
+import { Rect } from '../../core/src/rect';
+import { calcRightBottom, calcTextLines } from '@topology/core';
 
-export function table(ctx: CanvasRenderingContext2D, pen: any) {
-  if (!pen.onDestroy) {
+export function table(ctx: CanvasRenderingContext2D, pen: formPen) {
+  if (!pen.onAdd) {
     pen.onAdd = onAdd;
     pen.onMouseMove = onMouseMove;
     pen.onMouseLeave = onMouseLeave;
     pen.onMouseDown = onMouseDown;
     pen.onShowInput = onShowInput;
     pen.onInput = onInput;
+    pen.onValue = onValue;
+    pen.onBeforeValue = beforeValue;
   }
 
   const data = pen.calculative.canvas.store.data;
   const options = pen.calculative.canvas.store.options;
 
   pen.color = pen.color || data.color || options.color;
-  pen.activeColor = pen.activeColor || data.activeColor || options.activeColor;
-  pen.hoverColor = pen.hoverColor || data.hoverColor || options.hoverColor;
-  pen.activeBackground =
-    pen.activeBackground || data.activeBackground || options.activeBackground;
-  pen.hoverBackground =
-    pen.hoverBackground || data.hoverBackground || options.hoverBackground;
+  pen.activeColor = pen.activeColor || options.activeColor;
+  pen.hoverColor = pen.hoverColor || options.hoverColor;
+  pen.activeBackground = pen.activeBackground || options.activeBackground;
+  pen.hoverBackground = pen.hoverBackground || options.hoverBackground;
 
   // 画网格线
   drawGridLine(ctx, pen);
 
   // 画单元格
   drawCell(ctx, pen);
-
-  return false;
 }
 
-function initRect(pen: any) {
+function initRect(pen: formPen) {
   const colPos = [];
   const rowPos = [];
 
@@ -75,11 +76,11 @@ function initRect(pen: any) {
       height: pen.height,
       width: pen.width,
     };
-    calcExy(pen.calculative.worldRect);
+    calcRightBottom(pen.calculative.worldRect);
   }
 }
 
-function drawGridLine(ctx: CanvasRenderingContext2D, pen: any) {
+function drawGridLine(ctx: CanvasRenderingContext2D, pen: formPen) {
   if (!pen.colPos) {
     return;
   }
@@ -125,7 +126,7 @@ function drawGridLine(ctx: CanvasRenderingContext2D, pen: any) {
   ctx.restore();
 }
 
-function drawCell(ctx: CanvasRenderingContext2D, pen: any) {
+function drawCell(ctx: CanvasRenderingContext2D, pen: formPen) {
   if (!pen.colPos) {
     return;
   }
@@ -134,10 +135,12 @@ function drawCell(ctx: CanvasRenderingContext2D, pen: any) {
     pen.calculative.texts = [];
   }
 
-  const textScale = Math.min(
-    pen.calculative.worldRect.width / pen.tableWidth,
-    pen.calculative.worldRect.height / pen.tableHeight
-  );
+  // const textScale = Math.min(
+  //   pen.calculative.worldRect.width / pen.tableWidth,
+  //   pen.calculative.worldRect.height / pen.tableHeight
+  // );
+
+  const textScale = 1;
 
   for (let i = 0; i < pen.rowPos.length; i++) {
     for (let j = 0; j < pen.colPos.length; j++) {
@@ -148,19 +151,13 @@ function drawCell(ctx: CanvasRenderingContext2D, pen: any) {
       let activeColor: any;
 
       // 选中
-      if (
-        pen.calculative.activeCell?.row === i &&
-        pen.calculative.activeCell?.col === j
-      ) {
+      if (pen.calculative.activeCell?.row === i && pen.calculative.activeCell?.col === j) {
         color = pen.activeColor;
         background = pen.activeBackground;
         activeColor = color;
       }
       // hover
-      if (
-        pen.calculative.hoverCell?.row === i &&
-        pen.calculative.hoverCell?.col === j
-      ) {
+      if (pen.calculative.hoverCell?.row === i && pen.calculative.hoverCell?.col === j) {
         color = pen.hoverColor;
         background = pen.hoverBackground;
 
@@ -197,8 +194,9 @@ function drawCell(ctx: CanvasRenderingContext2D, pen: any) {
       if (rowText[j] == null) {
         if (Array.isArray(cell)) {
           rowText[j] = '';
-          calcChildrenRect(pen, rect, cell);
+          //子节点创建后无需再计算位置
           if (!cell[0].id) {
+            calcChildrenRect(pen, rect, cell);
             pen.calculative.canvas.parent.pushChildren(pen, cell);
           }
           continue;
@@ -210,10 +208,7 @@ function drawCell(ctx: CanvasRenderingContext2D, pen: any) {
           continue;
         }
         // 计算换行和省略号
-        rowText[j] = pen.calculative.canvas.parent.calcTextLines(
-          pen,
-          rowText[j]
-        );
+        rowText[j] = calcTextLines(pen, rowText[j]);
       }
 
       if (!rowText[j]) {
@@ -234,24 +229,15 @@ function drawCell(ctx: CanvasRenderingContext2D, pen: any) {
         pen.calculative.fontFamily;
 
       if (rowText[j].length === 1) {
-        ctx.fillText(
-          rowText[j][0],
-          rect.x + rect.width / 2,
-          rect.y + rect.height / 2
-        );
+        ctx.fillText(rowText[j][0], rect.x + rect.width / 2, rect.y + rect.height / 2);
       } else {
         const y = 0.55;
-        const lineHeight =
-          pen.calculative.fontSize * pen.calculative.lineHeight * textScale;
+        const lineHeight = pen.calculative.fontSize * pen.calculative.lineHeight * textScale;
 
         const h = rowText[j].length * lineHeight;
         let top = (rect.height - h) / 2;
         rowText[j].forEach((text, i) => {
-          ctx.fillText(
-            text,
-            rect.x + rect.width / 2,
-            rect.y + top + (i + y) * lineHeight
-          );
+          ctx.fillText(text, rect.x + rect.width / 2, rect.y + top + (i + y) * lineHeight);
         });
       }
       ctx.restore();
@@ -260,21 +246,17 @@ function drawCell(ctx: CanvasRenderingContext2D, pen: any) {
 }
 
 // 添加table节点回调
-function onAdd(pen: any) {
+function onAdd(pen: formPen) {
   initRect(pen);
 }
 
-function onShowInput(pen: any, text: string) {
+function onShowInput(pen: any, e: Point) {
   // 没有活动单元格
   if (!pen.calculative.hoverCell) {
     return;
   }
 
-  const cell = getCell(
-    pen,
-    pen.calculative.hoverCell.row,
-    pen.calculative.hoverCell.col
-  );
+  const cell = getCell(pen, pen.calculative.hoverCell.row, pen.calculative.hoverCell.col);
   // 子节点，非文本
   if (Array.isArray(cell)) {
     return;
@@ -282,51 +264,42 @@ function onShowInput(pen: any, text: string) {
 
   pen.calculative.inputCell = pen.calculative.hoverCell;
 
-  const rect = getCellRect(
-    pen,
-    pen.calculative.hoverCell.row,
-    pen.calculative.hoverCell.col
-  );
+  const rect = getCellRect(pen, pen.calculative.hoverCell.row, pen.calculative.hoverCell.col);
   pen.calculative.tempText = cell.text || cell + '';
   pen.calculative.canvas.showInput(pen, rect, '#ffffff');
 }
 
 //将输入的数据写入到对应的data中
-function onInput(pen: any, text: string) {
+function onInput(pen: formPen, text: string) {
   if (!pen.calculative.inputCell) {
     return;
   }
 
-  setCellText(
-    pen,
-    pen.calculative.inputCell.row,
-    pen.calculative.inputCell.col,
-    text
-  );
-  pen.calculative.canvas.render(Infinity);
+  setCellText(pen, pen.calculative.inputCell.row, pen.calculative.inputCell.col, text);
+  pen.calculative.canvas.render();
 }
 
-function onMouseMove(pen: any, e: any) {
+function onMouseMove(pen: formPen, e: Point) {
   pen.calculative.hoverCell = getCellIndex(pen, e);
-  pen.calculative.canvas.render(Infinity);
+  pen.calculative.canvas.render();
 }
 
-function onMouseLeave(pen: any, e: any) {
+function onMouseLeave(pen: formPen, e: Point) {
   pen.calculative.hoverCell = undefined;
-  pen.calculative.canvas.render(Infinity);
+  pen.calculative.canvas.render();
 }
 
-function onMouseDown(pen: any, e: any) {
+function onMouseDown(pen: formPen, e: Point) {
   pen.calculative.activeCell = getCellIndex(pen, e);
-  pen.calculative.canvas.render(Infinity);
+  pen.calculative.canvas.render();
 }
 
 // 根据坐标，计算在哪个cell
-function getCellIndex(pen: any, e: any) {
+function getCellIndex(pen: formPen, e: Point): Pos {
   const scaleX = pen.calculative.worldRect.width / pen.tableWidth;
   const scaleY = pen.calculative.worldRect.height / pen.tableHeight;
 
-  const pos = { row: 0, col: 0 };
+  const pos: Pos = { row: 0, col: 0 };
 
   for (let i = 0; i < pen.colPos.length; i++) {
     if (e.x > pen.calculative.worldRect.x + pen.colPos[i] * scaleX) {
@@ -343,7 +316,7 @@ function getCellIndex(pen: any, e: any) {
 }
 
 // 根据index获取cell
-function getCell(pen: any, rowIndex: number, colIndex: number) {
+function getCell(pen: formPen, rowIndex: number, colIndex: number) {
   if (!pen.table.data || !Array.isArray(pen.table.data)) {
     return;
   }
@@ -380,16 +353,11 @@ function getCell(pen: any, rowIndex: number, colIndex: number) {
 }
 
 // 设置cell的文本
-function setCellText(
-  pen: any,
-  rowIndex: number,
-  colIndex: number,
-  text: string
-) {
+function setCellText(pen: formPen, rowIndex: number, colIndex: number, text: string) {
   if (!pen.table.data || !Array.isArray(pen.table.data)) {
     return;
   }
-
+  //TODO 导致错误
   pen.calculative.texts = undefined;
 
   let rowData: any;
@@ -432,7 +400,7 @@ function setCellText(
 }
 
 // 计算cell世界坐标区域
-function getCellRect(pen: any, rowIndex: number, colIndex: number) {
+function getCellRect(pen: formPen, rowIndex: number, colIndex: number) {
   const scaleX = pen.calculative.worldRect.width / pen.tableWidth;
   const scaleY = pen.calculative.worldRect.height / pen.tableHeight;
 
@@ -459,7 +427,7 @@ function getCellRect(pen: any, rowIndex: number, colIndex: number) {
 }
 
 // 计算cell子节点的世界坐标区域
-function calcChildrenRect(pen: any, rect: any, children: any) {
+function calcChildrenRect(pen: formPen, rect: Rect, children: formPen[]) {
   const scaleX = pen.calculative.worldRect.width / pen.tableWidth;
   const scaleY = pen.calculative.worldRect.height / pen.tableHeight;
 
@@ -493,4 +461,20 @@ function calcChildrenRect(pen: any, rect: any, children: any) {
       item.y += top;
     }
   }
+}
+
+function onValue(pen: formPen) {
+  pen.calculative.texts = undefined;
+}
+
+function beforeValue(pen: formPen, value: any) {
+  if ((value as any).table || (value.col == undefined && value.row == undefined)) {
+    // 整体传参，不做处理
+    return value;
+  }
+  setCellText(pen, value.row, value.col, value.value);
+  pen.calculative.canvas.render();
+  delete value.col;
+  delete value.row;
+  return value;
 }

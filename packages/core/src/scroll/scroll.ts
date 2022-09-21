@@ -91,7 +91,6 @@ export class Scroll {
       this.scrollX = this.lastScrollX + x;
       this.h.style.left = `${this.scrollX}px`;
       this.parent.store.data.x = this.x - (x * this.rect.width) / this.parent.parentElement.clientWidth;
-      this.parent.dirty = true;
     }
 
     if (this.isDownV) {
@@ -99,16 +98,14 @@ export class Scroll {
       this.scrollY = this.lastScrollY + y;
       this.v.style.top = `${this.scrollY}px`;
       this.parent.store.data.y = this.y - (y * this.rect.height) / this.parent.parentElement.clientHeight;
-      this.parent.dirty = true;
     }
 
     if (this.isDownH || this.isDownV) {
       this.parent.onMovePens();
-      this.parent.canvasImage.initStatus();
-      this.parent.canvasImageBottom.initStatus();
+      this.parent.canvasImage.init();
+      this.parent.canvasImageBottom.init();
       this.parent.render();
     }
-
   };
 
   private onMouseUp = (e: MouseEvent) => {
@@ -215,7 +212,6 @@ export class Scroll {
     this.scrollY += y;
     this.v.style.top = `${this.scrollY}px`;
     this.parent.store.data.y -= (y * this.rect.height) / this.parent.parentElement.clientHeight;
-    this.parent.dirty = true;
 
     this.parent.onMovePens();
     this.parent.render();

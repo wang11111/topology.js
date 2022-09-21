@@ -18,7 +18,7 @@ const onOpen = (e) => {
     try {
       const json = JSON.parse(event.target.result);
       window.topology.open(json);
-    } catch {
+    } catch(e) {
       console.log("读取文件失败，请检查数据格式");
     }
   };
@@ -47,8 +47,7 @@ const onTogglePencil = () => {
   }
   if (isPencilActive.value === true) {
     isPencilActive.value = false;
-    // TODO: 新版本发布后，使用 stopPencil()
-    window.topology.finishPencil();
+    window.topology.stopPencil();
   } else {
     isPencilActive.value = true;
     window.topology.drawingPencil();

@@ -1,21 +1,61 @@
+import { leChartPen, ReplaceMode } from './common';
 //饼状图
-export function pieChart(ctx: CanvasRenderingContext2D, pen: any) {
+export function pieChart(ctx: CanvasRenderingContext2D, pen: leChartPen) {
+  if (!pen.onBeforeValue) {
+    pen.onBeforeValue = beforeValue;
+  }
   const x = pen.calculative.worldRect.x;
   const y = pen.calculative.worldRect.y;
   const w = pen.calculative.worldRect.width;
   const h = pen.calculative.worldRect.height;
 
   const isEcharts = pen.echarts ? true : false;
-  if (pen.echarts && !pen.echarts.option.color) {
-    pen.echarts.option.color = [
-      '#1890ff',
-      '#2FC25B',
-      '#FACC14',
-      '#c23531',
-      '#2f4554',
-      '#61a0a8',
-      '#d48265',
-    ];
+  // if (pen.echarts && !pen.echarts.option.color) {
+  //   pen.echarts.option.color = [
+  //     '#1890ff',
+  //     '#2FC25B',
+  //     '#FACC14',
+  //     '#c23531',
+  //     '#2f4554',
+  //     '#61a0a8',
+  //     '#d48265',
+  //   ];
+  // } else {
+  //   pen.chartsColor = [
+  //     '#1890ff',
+  //     '#2FC25B',
+  //     '#FACC14',
+  //     '#c23531',
+  //     '#2f4554',
+  //     '#61a0a8',
+  //     '#d48265',
+  //   ];
+  // }
+  if (pen.echarts) {
+    if (!pen.echarts.option.color) {
+      pen.echarts.option.color = [
+        '#1890ff',
+        '#2FC25B',
+        '#FACC14',
+        '#c23531',
+        '#2f4554',
+        '#61a0a8',
+        '#d48265',
+      ];
+    }
+    pen.chartsColor = pen.echarts.option.color;
+  } else {
+    if (!pen.chartsColor) {
+      pen.chartsColor = [
+        '#1890ff',
+        '#2FC25B',
+        '#FACC14',
+        '#c23531',
+        '#2f4554',
+        '#61a0a8',
+        '#d48265',
+      ];
+    }
   }
   const seriesArray = isEcharts ? pen.echarts.option.series : pen.data;
   let beforeSeriesLength = 0;
@@ -46,7 +86,7 @@ export function pieChart(ctx: CanvasRenderingContext2D, pen: any) {
         parseFloat(isEcharts ? series.radius[1] : pen.chartsRadius[ser][1])) /
       100;
     if (fromR > toR) {
-      return false;
+      return;
     }
     let beforeAngle = 0;
     let afterAngle = 0;
@@ -58,9 +98,13 @@ export function pieChart(ctx: CanvasRenderingContext2D, pen: any) {
     data.forEach((item: any, index: number) => {
       afterAngle += (Math.PI * 2 * item.value) / sum;
       ctx.beginPath();
+      let colorLength = beforeSeriesLength + index;
+      if (colorLength >= pen.chartsColor.length) {
+        colorLength = colorLength % pen.chartsColor.length;
+      }
       ctx.fillStyle = isEcharts
-        ? pen.echarts.option.color[beforeSeriesLength + index]
-        : pen.chartsColor[beforeSeriesLength + index];
+        ? pen.echarts.option.color[colorLength]
+        : pen.chartsColor[colorLength];
       ctx.moveTo(
         centerX + fromR * Math.sin(afterAngle),
         centerY - fromR * Math.cos(afterAngle)
@@ -155,5 +199,41 @@ export function pieChart(ctx: CanvasRenderingContext2D, pen: any) {
 
     beforeSeriesLength += data.length;
   }
-  return false;
+}
+
+function beforeValue(pen: leChartPen, value: any) {
+  if (value.data || (!value.dataX && !value.dataY)) {
+    // 整体传参，不做处理
+    return value;
+  }
+
+  const _data = pen.data;
+  const replaceMode = pen.replaceMode;
+  let data = [];
+  if (!replaceMode) {
+    //追加
+    _data.forEach((item: any, index: number) => {
+      let _item = [...item, ...value.dataY[index]];
+      data.push(_item);
+    });
+  } else if (replaceMode === ReplaceMode.Replace) {
+    //替换部分
+    value.dataY.forEach((item: any, index: number) => {
+      item.forEach((_innerItem: any, _innderIndex: number) => {
+        let _filterItem = _data[index].filter(
+          (_i: any) => _i.name === _innerItem.name
+        );
+        if (_filterItem.length > 0) {
+          _filterItem[0].value = _innerItem.value;
+        }
+      });
+    });
+    data = _data;
+  } else if (replaceMode === ReplaceMode.ReplaceAll) {
+    //全部替换
+    data = value.dataY;
+  }
+  delete value.dataX;
+  delete value.dataY;
+  return Object.assign(value, { data });
 }

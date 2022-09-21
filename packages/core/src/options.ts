@@ -67,8 +67,8 @@ export interface Options {
   scroll?: boolean;
   uploadFn?: (file: File) => Promise<string>; // uploadFn 优先级最高
   uploadUrl?: string;
-  uploadParams?: object;
-  uploadHeaders?: { [key: string]: string };
+  uploadParams?: Record<string, any>;
+  uploadHeaders?: Record<string, string>;
   disableRuleLine?: boolean;
   ruleLineColor?: string;
   defaultAnchors?: Point[]; // 图形的默认瞄点
@@ -76,7 +76,6 @@ export interface Options {
 }
 
 export const defaultOptions: Options = {
-  textColor: '#222222',
   fontFamily:
     '"Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial',
   fontSize: 12,

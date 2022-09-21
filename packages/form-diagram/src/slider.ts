@@ -1,16 +1,19 @@
-import { calcExy } from "@topology/core";
+import { formPen } from './common';
+import { Point } from '../../core/src/point';
+import { calcRightBottom, calcTextRect } from '@topology/core';
 
-export function slider(ctx: CanvasRenderingContext2D, pen: any) {
-  if (!pen.onDestroy) {
+export function slider(ctx: CanvasRenderingContext2D, pen: formPen) {
+  if (!pen.onAdd) {
     pen.onAdd = initRect;
     pen.onResize = initRect;
     pen.onMouseMove = mouseMove;
     pen.onMouseDown = mouseDown;
     pen.onValue = onValue;
+    pen.onBeforeValue = beforeValue;
   }
 
   if (!pen.calculative.barRect) {
-    initRect(pen)
+    initRect(pen);
     // return;
   }
 
@@ -34,7 +37,8 @@ export function slider(ctx: CanvasRenderingContext2D, pen: any) {
   ctx.fill();
 
   // draw active bar
-  ctx.fillStyle = pen.activeColor || data.activeColor || options.activeColor;
+  // ctx.fillStyle = pen.activeColor || data.activeColor || options.activeColor;
+  ctx.fillStyle = pen.activeColor || options.activeColor;
   ctx.beginPath();
   w = pen.calculative.ballRect.x;
   ctx.moveTo(x + r, y);
@@ -56,11 +60,9 @@ export function slider(ctx: CanvasRenderingContext2D, pen: any) {
   ctx.arc(x, y, pen.calculative.ballRect.width / 2, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-
-  return false;
 }
 
-function initRect(pen: any) {
+function initRect(pen: formPen) {
   if (!pen._textWidth) {
     pen._textWidth = pen.textWidth || 50;
     pen._fontSize = pen.fontSize || 12;
@@ -96,27 +98,28 @@ function initRect(pen: any) {
     width: barWidth,
     height: pen.barHeight * scaleY,
   };
-  calcExy(pen.calculative.barRect);
+  calcRightBottom(pen.calculative.barRect);
 
   calcBallRect(pen);
 }
 
-function calcBallRect(pen: any) {
+function calcBallRect(pen: formPen) {
   const height = pen.calculative.barRect.height * 3.5;
-  const progress = (pen.calculative.barRect.width * pen.value) / 100;
+  const progress =
+    (pen.calculative.barRect.width * (pen.value as number)) / 100;
   pen.calculative.ballRect = {
     x: progress,
     y: (pen.calculative.worldRect.height - height) / 2,
     width: height,
     height,
   };
-  calcExy(pen.calculative.ballRect);
+  calcRightBottom(pen.calculative.ballRect);
 
   pen.calculative.text = pen.value + pen.unit;
-  pen.calculative.canvas.parent.calcTextRect(pen);
+  calcTextRect(pen);
 }
 
-function mouseDown(pen: any, e: any) {
+function mouseDown(pen: formPen, e: Point) {
   const pos = e.x - pen.calculative.worldRect.x;
   if (pos > pen.calculative.barRect.width) {
     return;
@@ -126,21 +129,40 @@ function mouseDown(pen: any, e: any) {
   if (value < pen.min || value > pen.max) {
     return;
   }
-  console.log('move', value);
+  if (value < 0 || value > 100) {
+    return;
+  }
   pen.value = value;
   calcBallRect(pen);
   pen.calculative.text = pen.value + pen.unit;
-  pen.calculative.canvas.parent.calcTextRect(pen);
+  calcTextRect(pen);
   pen.calculative.canvas.store.emitter.emit('valueUpdate', pen);
-  pen.calculative.canvas.render(Infinity);
+  pen.calculative.canvas.render();
 }
 
-function mouseMove(pen: any, e: any) {
+function mouseMove(pen: formPen, e: Point) {
   if (pen.calculative.canvas.mouseDown) {
     mouseDown(pen, e);
   }
 }
 
-function onValue(pen: any) {
+function onValue(pen: formPen) {
+  if (pen.calculative.isUpdateData) {
+    delete pen.calculative.isUpdateData;
+    initRect(pen);
+  }
   calcBallRect(pen);
+}
+
+function beforeValue(pen: formPen, value: any) {
+  pen.calculative.isUpdateData = false;
+
+  if (value.textWidth || value.barHeight) {
+    if (value.textWidth) {
+      pen._textWidth = 0;
+    }
+    pen.calculative.isUpdateData = true;
+  }
+
+  return value;
 }
