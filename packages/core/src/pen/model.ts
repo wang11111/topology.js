@@ -2,6 +2,7 @@ import { Point } from '../point';
 import { Rect } from '../rect';
 import { Event } from '../event';
 import { Canvas } from '../canvas';
+import { StandardOperation } from '../canvas/state';
 
 export enum PenType {
   Node,
@@ -429,6 +430,7 @@ export interface Pen extends Rect {
     zIndex?: number; //dom节点 z-index;
     // media element
     onended?: (pen: Pen) => void;
+    matrixObj?:StandardOperation
   };
 
   // 前一个动画帧状态数据
