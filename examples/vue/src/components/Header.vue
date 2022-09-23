@@ -75,6 +75,12 @@ const onHelp = () => {
   window.open("https://www.yuque.com/alsmile/topology/cucep0");
 };
 
+const onfilpx = () => {
+  window.topology._setValue({id:window.topology.store.data.pens[0].id,flipX:true});
+  window.topology.filpx(window.topology.store.data.pens[0]);
+  window.topology.render();
+}
+
 const onKeyDown = (e) => {
   switch (e.key) {
     case "b":
@@ -139,6 +145,7 @@ onUnmounted(() => {
       <button id="pencil" :class="{ active: isPencilActive }" @click="onTogglePencil">铅笔</button>
       <button id="magnifier" :class="{ active: isMagnifierActive }" @click="onToggleMagnifier">放大镜</button>
       <button id="minimap" :class="{ active: isMinimapActive }" @click="onToggleMinimap">缩略图</button>
+      <button id="sp" :class="{ active: isMinimapActive }" @click="onfilpx">水平翻转</button>
       <button id="help" @click="onHelp">帮助</button>
     </div>
   </div>
