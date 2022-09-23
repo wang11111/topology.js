@@ -528,52 +528,35 @@ export function ctxRotate(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   pen: Pen
 ) {
-  // const { x, y } = pen.calculative.worldRect.center;
-  // ctx.translate(x, y);
-  // let rotate = (pen.calculative.rotate * Math.PI) / 180;
-  // // 目前只有水平和垂直翻转，都需要 * -1
-  // if (pen.calculative.flipX) {
-  //   rotate *= -1;
-  // } else if (pen.calculative.flipY) {
-  //   rotate *= -1;
-  // }
-  // ctx.rotate(rotate);
-  // ctx.translate(-x, -y);
-  //ctx.save();
   const { x, y } = pen.calculative.worldRect.center;
-  var matrix = pen.calculative.matrixObj.toMatrix();
+  ctx.translate(x, y);
+  let rotate = (pen.calculative.rotate * Math.PI) / 180;
+  // 目前只有水平和垂直翻转，都需要 * -1
   if (pen.calculative.flipX) {
-    pen.calculative.matrixObj.addTranslate(x, y);
-    pen.calculative.matrixObj.addFlip("x");
-    pen.calculative.matrixObj.addTranslate(-x, -y);
+    rotate *= -1;
+  } else if (pen.calculative.flipY) {
+    rotate *= -1;
   }
-  if (pen.calculative.flipY) {
-    pen.calculative.matrixObj.addFlip("y");
-  }
-  ctx.setTransform(
-    matrix[0],
-    matrix[1],
-    matrix[2],
-    matrix[3],
-    matrix[4],
-    matrix[5]
-  );
-  // ctx.save();
-
-  //ctx.restore();
+  ctx.rotate(rotate);
+  ctx.translate(-x, -y);
 }
 
 export function ctxSetTransform(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   pen: Pen
 ) {
+  // const { x, y } = pen.calculative.worldRect.center;
   var matrix = pen.calculative.matrixObj.toMatrix();
-  if (pen.calculative.flipX) {
-    pen.calculative.matrixObj.addFlip("x");
-  }
-  if (pen.calculative.flipY) {
-    pen.calculative.matrixObj.addFlip("y");
-  }
+  // if (pen.calculative.flipX) {
+  //   pen.calculative.matrixObj.addTranslate(x , y);
+  //   pen.calculative.matrixObj.addFlip("x");
+  //   pen.calculative.matrixObj.addTranslate(-x , -y);
+  // }
+  // if (pen.calculative.flipY) {
+  //   pen.calculative.matrixObj.addTranslate(x , y);
+  //   pen.calculative.matrixObj.addFlip("y");
+  //   pen.calculative.matrixObj.addTranslate(-x , -y);
+  // }
   ctx.setTransform(
     matrix[0],
     matrix[1],
@@ -589,10 +572,10 @@ export function renderPen(ctx: CanvasRenderingContext2D, pen: Pen) {
   // ctx.translate(0.5, 0.5);
   ctx.beginPath();
 
-  // ctxFlip(ctx, pen);
+  //ctxFlip(ctx, pen);
 
   if (pen.calculative.rotate && pen.name !== 'line') {
-    // ctxRotate(ctx, pen);
+    //  ctxRotate(ctx, pen);
   }
   ctxSetTransform(ctx, pen);
   if (pen.calculative.lineWidth > 1) {

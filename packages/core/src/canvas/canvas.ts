@@ -94,7 +94,6 @@ import {
   s8,
 } from '../utils';
 import {
-  canChangeTogether,
   defaultCursors,
   defaultDrawLineFns,
   HotkeyType,
@@ -122,7 +121,7 @@ import { CanvasImage } from './canvasImage';
 import { MagnifierCanvas } from './magnifierCanvas';
 import { lockedError } from '../utils/error';
 import { Topology } from '../core';
-import {utils ,StandardOperation} from './state'
+import { utils, StandardOperation, addTranslate, addRotate } from './state'
 export const movingSuffix = '-moving' as const;
 export class Canvas {
   canvas = document.createElement('canvas');
@@ -890,7 +889,7 @@ export class Canvas {
       const pt = { x: event.offsetX, y: event.offsetY };
       this.calibrateMouse(pt);
       this.dropPens(obj, pt);
-    } catch (e) {}
+    } catch (e) { }
   };
 
   async dropPens(pens: Pen[], e: Point) {
@@ -1300,7 +1299,7 @@ export class Canvas {
       if (to.isTemp) {
         this.drawingLine.calculative.activeAnchor =
           this.drawingLine.calculative.worldAnchors[
-            this.drawingLine.calculative.worldAnchors.length - 2
+          this.drawingLine.calculative.worldAnchors.length - 2
           ];
         to.isTemp = undefined;
       } else {
@@ -3274,6 +3273,7 @@ export class Canvas {
     offscreenCtx.translate(this.store.data.x, this.store.data.y);
     globalThis.debugRender && console.time('renderPens');
     this.renderPens();
+
     globalThis.debugRender && console.timeEnd('renderPens');
     this.renderBorder();
     this.renderHoverPoint();
@@ -3332,7 +3332,21 @@ export class Canvas {
       ) {
         const ctx = this.offscreen.getContext('2d');
         ctx.save();
-        ctx.translate(0.5, 0.5);
+        // if (this.activeRect.rotate) {
+        //   var s = new StandardOperation();
+        //   s.addTranslate(this.activeRect.center.x, this.activeRect.center.y);
+        //   s.addRotate(this.activeRect.rotate)
+        //   s.addTranslate(-this.activeRect.center.x, -this.activeRect.center.y);
+        //   var matrix = s.toMatrix();
+        //   ctx.setTransform(
+        //     matrix[0],
+        //     matrix[1],
+        //     matrix[2],
+        //     matrix[3],
+        //     matrix[4],
+        //     matrix[5]
+        //   );
+        // }
         if (this.activeRect.rotate) {
           ctx.translate(this.activeRect.center.x, this.activeRect.center.y);
           ctx.rotate((this.activeRect.rotate * Math.PI) / 180);
@@ -4187,6 +4201,9 @@ export class Canvas {
         }
       } else {
         translateRect(pen.calculative.worldRect, x, y);
+        // var currentMatrix = pen.calculative.matrixObj.currentMatrix;
+        //  pen.calculative.matrixObj.currentMatrix = addTranslate(currentMatrix, x, y);
+
         this.updatePenRect(pen, { worldRectIsReady: true });
         pen.calculative.x = pen.x;
         pen.calculative.y = pen.y;
@@ -4431,9 +4448,9 @@ export class Canvas {
         pen.x = (pen.calculative.worldRect.x - rect.x) / rect.width;
         pen.y = (pen.calculative.worldRect.y - rect.y) / rect.height;
       } else {
-        pen.calculative.matrixObj.addTranslate(pen.calculative.worldRect.center.x,pen.calculative.worldRect.center.y);
+        pen.calculative.matrixObj.addTranslate(pen.calculative.worldRect.center.x, pen.calculative.worldRect.center.y);
         pen.calculative.matrixObj.addRotate(angle);
-        pen.calculative.matrixObj.addTranslate(-pen.calculative.worldRect.center.x,-pen.calculative.worldRect.center.y);
+        pen.calculative.matrixObj.addTranslate(-pen.calculative.worldRect.center.x, -pen.calculative.worldRect.center.y);
         pen.x = pen.calculative.worldRect.center.x - pen.width / 2;
         pen.y = pen.calculative.worldRect.center.y - pen.height / 2;
       }
@@ -5105,51 +5122,45 @@ export class Canvas {
       style += `font-weight: ${pen.fontWeight};`;
     }
     if (pen.textLeft) {
-      style += `margin-left:${
-        scale > 1
-          ? pen.textLeft * font_scale
-          : (pen.textLeft * font_scale) / scale
-      }px;`;
+      style += `margin-left:${scale > 1
+        ? pen.textLeft * font_scale
+        : (pen.textLeft * font_scale) / scale
+        }px;`;
     }
     if (pen.textTop) {
-      style += `margin-top:${
-        scale > 1
-          ? pen.textTop * font_scale
-          : (pen.textTop * font_scale) / scale
-      }px;`;
+      style += `margin-top:${scale > 1
+        ? pen.textTop * font_scale
+        : (pen.textTop * font_scale) / scale
+        }px;`;
     }
     if (pen.lineHeight) {
-      style += `line-height:${
-        scale > 1
-          ? pen.fontSize * pen.lineHeight * scale
-          : pen.fontSize * pen.lineHeight * font_scale
-      }px;`;
+      style += `line-height:${scale > 1
+        ? pen.fontSize * pen.lineHeight * scale
+        : pen.fontSize * pen.lineHeight * font_scale
+        }px;`;
     }
     if (pen.textHeight) {
-      style += `height:${
-        scale > 1
-          ? pen.textHeight * font_scale * scale
-          : pen.textHeight * font_scale
-      }px;`;
+      style += `height:${scale > 1
+        ? pen.textHeight * font_scale * scale
+        : pen.textHeight * font_scale
+        }px;`;
     } else {
       let tem = pen.height / scale - (pen.textTop || 0);
       if (tem < 0) {
         tem = 0;
       }
-      style += `height:${
-        pen.fontSize * scale < 12 ? tem * font_scale : tem * scale * font_scale
-      }px;`;
+      style += `height:${pen.fontSize * scale < 12 ? tem * font_scale : tem * scale * font_scale
+        }px;`;
     }
     if (pen.textWidth) {
       if (pen.whiteSpace !== 'pre-line') {
         if (pen.textWidth < pen.fontSize) {
           style += `width:${pen.fontSize * 1.2 * font_scale}px;`;
         } else {
-          style += `width:${
-            scale > 1
-              ? pen.textWidth * font_scale * scale
-              : pen.textWidth * font_scale
-          }px;`;
+          style += `width:${scale > 1
+            ? pen.textWidth * font_scale * scale
+            : pen.textWidth * font_scale
+            }px;`;
         }
       }
     } else {
@@ -5158,9 +5169,8 @@ export class Canvas {
         if (tem < 0) {
           tem = 0;
         }
-        style += `width:${
-          pen.fontSize * scale < 12 ? tem * font_scale : tem * scale
-        }px;`;
+        style += `width:${pen.fontSize * scale < 12 ? tem * font_scale : tem * scale
+          }px;`;
       }
       // if (pen.whiteSpace === 'pre-line') {
       //   //回车换行
