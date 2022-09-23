@@ -23,7 +23,7 @@ import {
   setElemPosition,
   connectLine,
   nearestAnchor,
-  setChildValue,
+  //setChildValue,
 } from './pen';
 import { Point, rotatePoint } from './point';
 import {
@@ -742,6 +742,20 @@ export class Topology {
     return pen.frames.reduce((prev, frame) => prev + frame.duration, 0);
   }
 
+  filpx(pen: Pen) {
+    var matrix = pen.calculative.matrixObj.toMatrix();
+    const { x, y } = pen.calculative.worldRect.center;
+    if (pen.calculative.flipX) {
+      pen.calculative.matrixObj.addTranslate(x , y);
+      pen.calculative.matrixObj.addFlip("x");
+      pen.calculative.matrixObj.addTranslate(-x , -y);
+    }
+    if (pen.calculative.flipY) {
+      pen.calculative.matrixObj.addTranslate(x , y);
+      pen.calculative.matrixObj.addFlip("y");
+      pen.calculative.matrixObj.addTranslate(-x , -y);
+    }
+  }
   /**
    * 组合
    * @param pens 组合的画笔们
@@ -1159,7 +1173,7 @@ export class Topology {
         }
       }
 
-      setChildValue(pen, afterData);
+      //  setChildValue(pen, afterData);
       this.canvas.updateValue(pen, afterData);
       pen.onValue?.(pen);
     });
