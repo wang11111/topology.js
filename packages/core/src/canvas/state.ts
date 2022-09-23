@@ -1,5 +1,5 @@
-export function utils() {}
-utils.multiplyMatrix = function(a, b) {
+export function utils() { }
+utils.multiplyMatrix = function (a, b) {
     // Matrix multiply a * b
     return [
         a[0] * b[0] + a[2] * b[1],
@@ -11,32 +11,62 @@ utils.multiplyMatrix = function(a, b) {
     ];
 }
 
-utils.degreesToRadians = function(degrees) {
+utils.degreesToRadians = function (degrees) {
     return degrees * Math.PI / 180;
 }
 
-utils.radiansToDegrees = function(radians) {
+utils.radiansToDegrees = function (radians) {
     return radians / Math.PI * 180;
 }
 
+export function addRotate(deltaAngle: number, currentAngle: number, hasMirror: boolean, currentMatrix: number[]) {
+    if (!deltaAngle) {
+        return;
+    }
+
+    //如果已翻转，再旋转
+    if (this.hasMirror) {
+        deltaAngle = -deltaAngle;
+    }
+
+    currentAngle += deltaAngle;
+    return addRotateMatrix(currentMatrix, deltaAngle);
+}
+
+export function addRotateMatrix(currentMatrix: number[], deltaAngle: number) {
+    var radian = utils.degreesToRadians(deltaAngle),
+        cos = Math.cos(radian),
+        sin = Math.sin(radian);
+    var rotateMatrix = [cos, sin, -sin, cos, 0, 0];
+    return addMatrix(currentMatrix, rotateMatrix);
+}
+
+export function addTranslate(currentMatrix: number[], translateX, translateY) {
+    var translateMatrix = [1, 0, 0, 1, translateX, translateY];
+    return addMatrix(currentMatrix, translateMatrix);
+}
+
+export function addMatrix(currentMatrix: number[], matrix: number[]) {
+    return utils.multiplyMatrix(currentMatrix, matrix);
+}
 export class StandardOperation {
     originalMatrix = [1, 0, 0, 1, 0, 0];
-    translateX:number;
-    translateY:number;
-    scaleX:number;
-    scaleY:number;
-    flipX:boolean;
-    flipY:boolean;
-    angle:number;
+    translateX: number;
+    translateY: number;
+    scaleX: number;
+    scaleY: number;
+    flipX: boolean;
+    flipY: boolean;
+    angle: number;
 
-    originalX:number;
-    originalY:number;
-    currentMatrix:number[];
-    currentAngle:number;
-    hasMirror:boolean
+    originalX: number;
+    originalY: number;
+    currentMatrix: number[];
+    currentAngle: number;
+    hasMirror: boolean
 
-    skewX:number;
-    skewY:number;
+    skewX: number;
+    skewY: number;
     constructor() {
         this.translateX = 0;
         this.translateY = 0;
@@ -109,7 +139,7 @@ export class StandardOperation {
         this.addMatrix(rotateMatrix);
     }
 
-    addFlip(flipAxis, point) {
+    addFlip(flipAxis) {
         if (!flipAxis) {
             return;
         }
