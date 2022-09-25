@@ -75,6 +75,7 @@ import {
   rectToPoints,
   resizeRect,
   translateRect,
+  translateMartixRect
 } from '../rect';
 import {
   EditAction,
@@ -4201,8 +4202,6 @@ export class Canvas {
         }
       } else {
         translateRect(pen.calculative.worldRect, x, y);
-        // var currentMatrix = pen.calculative.matrixObj.currentMatrix;
-        //  pen.calculative.matrixObj.currentMatrix = addTranslate(currentMatrix, x, y);
 
         this.updatePenRect(pen, { worldRectIsReady: true });
         pen.calculative.x = pen.x;
