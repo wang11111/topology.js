@@ -1,6 +1,7 @@
 import { isEqual, Pen } from '../pen';
 import { Point, rotatePoint, scalePoint } from '../point';
 import { formatPadding, Padding } from '../utils';
+import { utils } from '../canvas/state'
 
 export interface Rect {
   x?: number;
@@ -203,6 +204,21 @@ export function translateRect(rect: Rect | Pen, x: number, y: number) {
   if (rect.center) {
     rect.center.x += x;
     rect.center.y += y;
+  }
+}
+
+export function translateMartixRect(pen: Pen, x: number, y: number) {
+  var matrix = pen.calculative.matrixObj;
+  var matrixCoordinate = utils.multiplyCoordinate(matrix.currentMatrix, [x, y]);
+  var rect = pen.calculative.worldRect;
+  rect.x += matrixCoordinate[0];
+  rect.y += matrixCoordinate[1];
+  rect.ex += matrixCoordinate[0];
+  rect.ey += matrixCoordinate[1];
+
+  if (rect.center) {
+    rect.center.x += matrixCoordinate[0];
+    rect.center.y += matrixCoordinate[1];
   }
 }
 
